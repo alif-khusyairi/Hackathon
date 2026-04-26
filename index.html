@@ -1,0 +1,1400 @@
+cat > /home/claude/clinic_workflow_ui.html << 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClinicFlow AI — Workflow Generator & Manager</title>
+<style>
+  /* ============ RESET & BASE ============ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --c-primary: #1B4F72;
+    --c-primary-light: #2E86C1;
+    --c-primary-xlight: #D6EAF8;
+    --c-accent: #0E9E75;
+    --c-accent-light: #E1F5EE;
+    --c-warn: #D97706;
+    --c-warn-light: #FEF3C7;
+    --c-danger: #DC2626;
+    --c-danger-light: #FEE2E2;
+    --c-success: #16A34A;
+    --c-success-light: #DCFCE7;
+    --c-purple: #7C3AED;
+    --c-purple-light: #EDE9FE;
+    --c-bg: #F0F4F8;
+    --c-surface: #FFFFFF;
+    --c-sidebar: #0F2942;
+    --c-sidebar-hover: #1B3D5C;
+    --c-sidebar-active: #1B4F72;
+    --c-text: #1E293B;
+    --c-text-muted: #64748B;
+    --c-text-light: #94A3B8;
+    --c-border: #E2E8F0;
+    --sidebar-w: 240px;
+    --nav-h: 60px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--c-bg); color: var(--c-text); font-size: 14px; line-height: 1.5; min-height: 100vh; display: flex; }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    width: var(--sidebar-w); min-width: var(--sidebar-w); height: 100vh; position: fixed; top: 0; left: 0;
+    background: var(--c-sidebar); display: flex; flex-direction: column; z-index: 100; overflow: hidden;
+  }
+  .sidebar-brand {
+    padding: 18px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-brand .brand-logo {
+    display: flex; align-items: center; gap: 10px; text-decoration: none;
+  }
+  .brand-icon {
+    width: 32px; height: 32px; background: var(--c-primary-light); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .brand-icon svg { width: 18px; height: 18px; }
+  .brand-name { font-size: 15px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.2px; }
+  .brand-sub { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.5px; text-transform: uppercase; }
+  .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  .nav-section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.35);
+    padding: 12px 20px 6px; font-weight: 600;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 20px; cursor: pointer;
+    color: rgba(255,255,255,0.65); font-size: 13.5px; font-weight: 450; transition: all 0.15s; position: relative;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--c-sidebar-hover); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: var(--c-sidebar-active); color: #FFFFFF; font-weight: 600; }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: #38BDF8; border-radius: 0 2px 2px 0;
+  }
+  .nav-item .nav-icon { width: 18px; height: 18px; opacity: 0.8; flex-shrink: 0; }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-badge {
+    margin-left: auto; background: var(--c-danger); color: white; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 10px; min-width: 18px; text-align: center;
+  }
+  .nav-badge.warn { background: var(--c-warn); }
+  .sidebar-footer {
+    padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--c-primary-light);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .user-info .user-name { font-size: 13px; font-weight: 600; color: #FFF; }
+  .user-info .user-role { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+  /* ============ MAIN LAYOUT ============ */
+  .main-wrapper { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ============ TOP NAVBAR ============ */
+  .topnav {
+    height: var(--nav-h); background: var(--c-surface); border-bottom: 1px solid var(--c-border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 90;
+    box-shadow: var(--shadow);
+  }
+  .topnav-title { font-size: 15px; font-weight: 700; color: var(--c-primary); white-space: nowrap; }
+  .topnav-clinic {
+    display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--c-primary-xlight);
+    border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--c-primary); white-space: nowrap;
+  }
+  .topnav-search {
+    flex: 1; max-width: 380px; position: relative;
+  }
+  .topnav-search input {
+    width: 100%; padding: 7px 12px 7px 34px; border: 1px solid var(--c-border); border-radius: 20px;
+    font-size: 13px; color: var(--c-text); background: var(--c-bg); outline: none; transition: border-color 0.15s;
+  }
+  .topnav-search input:focus { border-color: var(--c-primary-light); background: white; }
+  .topnav-search .search-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--c-text-muted);
+  }
+  .topnav-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--c-border); background: transparent;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--c-text-muted);
+    transition: all 0.15s; position: relative;
+  }
+  .icon-btn:hover { background: var(--c-bg); border-color: var(--c-primary-light); color: var(--c-primary); }
+  .notif-dot {
+    position: absolute; top: 6px; right: 6px; width: 7px; height: 7px;
+    background: var(--c-danger); border-radius: 50%; border: 1.5px solid white;
+  }
+  .topnav-user {
+    display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 6px;
+    border: 1px solid var(--c-border); border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  }
+  .topnav-user:hover { background: var(--c-bg); }
+  .topnav-user .av { width: 28px; height: 28px; border-radius: 50%; background: var(--c-primary-light); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; }
+  .topnav-user .uname { font-size: 13px; font-weight: 600; }
+  .topnav-user .urole { font-size: 11px; color: var(--c-text-muted); }
+
+  /* ============ MAIN CONTENT ============ */
+  .main-content { flex: 1; padding: 24px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+
+  /* ============ PAGE SECTIONS ============ */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--c-text); }
+  .section-sub { font-size: 12px; color: var(--c-text-muted); margin-top: 1px; }
+  .section-action { font-size: 12px; color: var(--c-primary-light); cursor: pointer; font-weight: 600; }
+  .section-action:hover { text-decoration: underline; }
+
+  /* ============ CARDS ============ */
+  .card {
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .card-header { padding: 14px 18px 12px; border-bottom: 1px solid var(--c-border); display: flex; align-items: center; gap: 10px; }
+  .card-body { padding: 18px; }
+  .card-icon {
+    width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .card-icon svg { width: 16px; height: 16px; }
+
+  /* ============ STAT CARDS ============ */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .stat-card.blue::before { background: var(--c-primary-light); }
+  .stat-card.amber::before { background: var(--c-warn); }
+  .stat-card.green::before { background: var(--c-success); }
+  .stat-card.red::before { background: var(--c-danger); }
+  .stat-label { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .stat-value { font-size: 32px; font-weight: 800; color: var(--c-text); line-height: 1; margin-bottom: 6px; }
+  .stat-meta { font-size: 11.5px; color: var(--c-text-muted); display: flex; align-items: center; gap: 4px; }
+  .stat-meta .up { color: var(--c-success); font-weight: 600; }
+  .stat-meta .down { color: var(--c-danger); font-weight: 600; }
+  .stat-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .stat-icon svg { width: 20px; height: 20px; }
+  .stat-icon.blue { background: var(--c-primary-xlight); color: var(--c-primary-light); }
+  .stat-icon.amber { background: var(--c-warn-light); color: var(--c-warn); }
+  .stat-icon.green { background: var(--c-success-light); color: var(--c-success); }
+  .stat-icon.red { background: var(--c-danger-light); color: var(--c-danger); }
+
+  /* ============ BUTTONS ============ */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-primary { background: var(--c-primary); color: white; }
+  .btn-primary:hover { background: var(--c-primary-light); }
+  .btn-success { background: var(--c-success); color: white; }
+  .btn-success:hover { background: #15803D; }
+  .btn-warn { background: var(--c-warn); color: white; }
+  .btn-warn:hover { background: #B45309; }
+  .btn-danger { background: var(--c-danger); color: white; }
+  .btn-danger:hover { background: #B91C1C; }
+  .btn-outline { background: transparent; color: var(--c-primary); border: 1px solid var(--c-primary-light); }
+  .btn-outline:hover { background: var(--c-primary-xlight); }
+  .btn-ghost { background: transparent; color: var(--c-text-muted); border: 1px solid var(--c-border); }
+  .btn-ghost:hover { background: var(--c-bg); color: var(--c-text); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-accent { background: var(--c-accent); color: white; }
+  .btn-accent:hover { background: #0B8062; }
+
+  /* ============ BADGES / STATUS ============ */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
+  }
+  .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .badge-active { background: var(--c-success-light); color: var(--c-success); }
+  .badge-pending { background: var(--c-warn-light); color: var(--c-warn); }
+  .badge-review { background: var(--c-purple-light); color: var(--c-purple); }
+  .badge-done { background: var(--c-border); color: var(--c-text-muted); }
+  .badge-urgent { background: var(--c-danger-light); color: var(--c-danger); }
+  .badge-new { background: var(--c-primary-xlight); color: var(--c-primary); }
+
+  /* ============ LEFT COLUMN ============ */
+  .left-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+  /* ============ NEW WORKFLOW INPUT ============ */
+  .workflow-input-area {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    font-size: 13.5px; resize: vertical; min-height: 100px; font-family: inherit; color: var(--c-text);
+    outline: none; transition: border-color 0.15s; background: var(--c-bg);
+  }
+  .workflow-input-area:focus { border-color: var(--c-primary-light); background: white; }
+  .input-row { display: flex; gap: 10px; margin-top: 12px; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 11px; font-weight: 600; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-select {
+    padding: 7px 10px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--c-text); background: white; outline: none; cursor: pointer; transition: border-color 0.15s;
+  }
+  .form-select:focus { border-color: var(--c-primary-light); }
+  .upload-btn {
+    display: flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px dashed var(--c-border);
+    border-radius: var(--radius-sm); font-size: 12px; color: var(--c-text-muted); cursor: pointer; background: var(--c-bg); transition: all 0.15s;
+  }
+  .upload-btn:hover { border-color: var(--c-primary-light); color: var(--c-primary); background: var(--c-primary-xlight); }
+  .ai-thinking { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: var(--c-primary-xlight); border-radius: var(--radius-sm); margin-top: 12px; }
+  .ai-thinking .dots span { display: inline-block; width: 6px; height: 6px; background: var(--c-primary-light); border-radius: 50%; margin: 0 1px; animation: bounce 1.2s infinite; }
+  .ai-thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .ai-thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+  /* ============ WORKFLOW STEPS ============ */
+  .workflow-result { display: none; }
+  .workflow-result.visible { display: block; }
+  .workflow-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .workflow-title { font-size: 15px; font-weight: 700; flex: 1; }
+  .steps-timeline { display: flex; flex-direction: column; gap: 0; }
+  .step-item {
+    display: flex; gap: 14px; padding: 12px 0; position: relative;
+  }
+  .step-item:not(:last-child)::after {
+    content: ''; position: absolute; left: 15px; top: 38px; bottom: -12px; width: 2px; background: var(--c-border);
+  }
+  .step-number {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--c-primary-xlight); border: 2px solid var(--c-primary-light);
+    display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: var(--c-primary);
+    flex-shrink: 0; z-index: 1;
+  }
+  .step-number.done { background: var(--c-success); border-color: var(--c-success); color: white; }
+  .step-number.human { background: var(--c-warn-light); border-color: var(--c-warn); color: var(--c-warn); }
+  .step-number.urgent { background: var(--c-danger-light); border-color: var(--c-danger); color: var(--c-danger); }
+  .step-body { flex: 1; }
+  .step-title { font-size: 13.5px; font-weight: 700; color: var(--c-text); }
+  .step-meta { display: flex; gap: 12px; margin-top: 3px; flex-wrap: wrap; }
+  .step-meta-item { font-size: 11.5px; color: var(--c-text-muted); display: flex; align-items: center; gap: 3px; }
+  .human-flag {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+    color: var(--c-warn); background: var(--c-warn-light); padding: 2px 7px; border-radius: 4px; margin-top: 4px;
+  }
+  .gap-flag {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
+    color: var(--c-danger); background: var(--c-danger-light); padding: 2px 7px; border-radius: 4px; margin-top: 4px;
+  }
+  .workflow-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--c-border); flex-wrap: wrap; }
+
+  /* ============ KANBAN ============ */
+  .kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .kanban-col { background: var(--c-bg); border-radius: var(--radius); padding: 12px; border: 1px solid var(--c-border); }
+  .kanban-col-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .kanban-col-title { font-size: 12px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .kanban-count {
+    font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+    background: var(--c-surface); border: 1px solid var(--c-border); color: var(--c-text-muted);
+  }
+  .task-card {
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; box-shadow: var(--shadow);
+  }
+  .task-card:hover { border-color: var(--c-primary-light); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .task-card:last-child { margin-bottom: 0; }
+  .task-title { font-size: 12.5px; font-weight: 600; color: var(--c-text); margin-bottom: 5px; line-height: 1.35; }
+  .task-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .task-assignee { display: flex; align-items: center; gap: 5px; }
+  .mini-av {
+    width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .task-time { font-size: 10.5px; color: var(--c-text-muted); }
+  .task-type-tag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-bottom: 5px; display: inline-block; }
+
+  /* ============ HUMAN REVIEW ============ */
+  .review-card {
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
+    padding: 14px 16px; box-shadow: var(--shadow); transition: box-shadow 0.15s;
+  }
+  .review-card:hover { box-shadow: var(--shadow-md); }
+  .review-card + .review-card { margin-top: 12px; }
+  .review-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .review-patient { font-size: 14px; font-weight: 700; color: var(--c-text); }
+  .review-issue { font-size: 12.5px; color: var(--c-text-muted); margin-top: 2px; }
+  .review-section { margin-bottom: 10px; }
+  .review-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--c-text-light); margin-bottom: 4px; }
+  .warning-box {
+    background: var(--c-danger-light); border-left: 3px solid var(--c-danger); border-radius: 0 4px 4px 0;
+    padding: 6px 10px; font-size: 12px; color: var(--c-danger); font-weight: 500;
+  }
+  .ai-rec-box {
+    background: var(--c-accent-light); border-left: 3px solid var(--c-accent); border-radius: 0 4px 4px 0;
+    padding: 6px 10px; font-size: 12px; color: #0A6B4E;
+  }
+  .review-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+
+  /* ============ WORKFLOW TABLE ============ */
+  .wf-table { width: 100%; border-collapse: collapse; }
+  .wf-table th { padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--c-text-muted); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--c-border); background: var(--c-bg); }
+  .wf-table td { padding: 10px 14px; font-size: 12.5px; border-bottom: 1px solid var(--c-border); color: var(--c-text); vertical-align: middle; }
+  .wf-table tr:last-child td { border-bottom: none; }
+  .wf-table tr:hover td { background: var(--c-bg); }
+  .wf-id { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--c-primary-light); }
+  .assigned-cell { display: flex; align-items: center; gap: 6px; }
+
+  /* ============ RIGHT COLUMN (ACTIVITY) ============ */
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+  .activity-feed { display: flex; flex-direction: column; gap: 0; }
+  .activity-item {
+    padding: 10px 14px; border-bottom: 1px solid var(--c-border); display: flex; gap: 10px; align-items: flex-start;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+  }
+  .activity-text { font-size: 12.5px; color: var(--c-text); line-height: 1.4; }
+  .activity-time { font-size: 11px; color: var(--c-text-light); margin-top: 2px; }
+  .alert-item {
+    padding: 10px 14px; border-bottom: 1px solid var(--c-border); display: flex; gap: 10px; align-items: flex-start;
+  }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .alert-icon svg { width: 14px; height: 14px; }
+  .alert-icon.warn { background: var(--c-warn-light); color: var(--c-warn); }
+  .alert-icon.danger { background: var(--c-danger-light); color: var(--c-danger); }
+  .alert-icon.info { background: var(--c-primary-xlight); color: var(--c-primary-light); }
+  .alert-title { font-size: 12.5px; font-weight: 600; color: var(--c-text); }
+  .alert-desc { font-size: 11.5px; color: var(--c-text-muted); margin-top: 1px; }
+  .alert-time { font-size: 10.5px; color: var(--c-text-light); margin-top: 3px; }
+
+  /* ============ FOOTER ============ */
+  .main-footer {
+    padding: 14px 24px; border-top: 1px solid var(--c-border); background: var(--c-surface);
+    display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--c-text-muted);
+  }
+  .footer-demo-badge {
+    background: var(--c-warn-light); color: var(--c-warn); padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;
+  }
+
+  /* ============ TOAST ============ */
+  .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .toast {
+    background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius);
+    padding: 12px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.12); display: flex; align-items: center; gap: 10px;
+    min-width: 260px; max-width: 360px; pointer-events: all; animation: toastIn 0.25s ease;
+  }
+  .toast-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .toast-icon svg { width: 14px; height: 14px; }
+  .toast.success .toast-icon { background: var(--c-success-light); color: var(--c-success); }
+  .toast.warn .toast-icon { background: var(--c-warn-light); color: var(--c-warn); }
+  .toast.info .toast-icon { background: var(--c-primary-xlight); color: var(--c-primary-light); }
+  .toast-msg { font-size: 13px; font-weight: 500; flex: 1; }
+  .toast-close { cursor: pointer; color: var(--c-text-light); padding: 2px; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 1200px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .kanban-board { grid-template-columns: repeat(2, 1fr); }
+    .main-content { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main-wrapper { margin-left: 0; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .kanban-board { grid-template-columns: 1fr; }
+  }
+
+  /* ============ SECTION TOGGLE ============ */
+  .page-section { display: none; }
+  .page-section.active { display: block; }
+  #section-dashboard { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ============ TOAST CONTAINER ============ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <a class="brand-logo" href="#">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">ClinicFlow AI</div>
+        <div class="brand-sub">Workflow Manager</div>
+      </div>
+    </a>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item active" data-section="dashboard" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item" data-section="new-workflow" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      New Workflow
+    </a>
+    <a class="nav-item" data-section="workflow-queue" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Workflow Queue
+      <span class="nav-badge">8</span>
+    </a>
+    <a class="nav-item" data-section="task-board" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      Task Board
+    </a>
+    <a class="nav-item" data-section="human-review" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Human Review
+      <span class="nav-badge warn">3</span>
+    </a>
+    <div class="nav-section-label">Clinical</div>
+    <a class="nav-item" data-section="patients" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Patients
+    </a>
+    <a class="nav-item" data-section="reports" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Reports
+    </a>
+    <div class="nav-section-label">System</div>
+    <a class="nav-item" data-section="settings" href="#">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-avatar">SR</div>
+    <div class="user-info">
+      <div class="user-name">Dr. Siti Rahimah</div>
+      <div class="user-role">Clinic Manager</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ MAIN WRAPPER ============ -->
+<div class="main-wrapper">
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-title">ClinicFlow AI</div>
+    <div class="topnav-clinic">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Klinik Sejahtera PJ
+    </div>
+    <div class="topnav-search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="Search patients, workflows, tasks..." id="searchInput" oninput="handleSearch(this.value)">
+    </div>
+    <div class="topnav-actions">
+      <button class="icon-btn" title="Notifications" onclick="showToast('info', '3 new alerts pending review')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-dot"></span>
+      </button>
+      <button class="icon-btn" title="AI Status" onclick="showToast('success', 'GLM Engine: Online — All systems operational')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </button>
+      <div class="topnav-user">
+        <div class="av">SR</div>
+        <div>
+          <div class="uname">Dr. Siti</div>
+          <div class="urole">Manager</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <div class="main-content">
+    <div class="left-col">
+
+      <!-- ===== DASHBOARD PAGE ===== -->
+      <div id="section-dashboard" class="page-section active">
+
+        <!-- STAT CARDS -->
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-label">Active Workflows</div>
+            <div class="stat-value">12</div>
+            <div class="stat-meta"><span class="up">↑ 4</span> from yesterday</div>
+            <div class="stat-icon blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Pending Human Review</div>
+            <div class="stat-value">3</div>
+            <div class="stat-meta"><span class="down">↑ 2</span> need urgent action</div>
+            <div class="stat-icon amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Completed Today</div>
+            <div class="stat-value">27</div>
+            <div class="stat-meta"><span class="up">↑ 12%</span> vs last week</div>
+            <div class="stat-icon green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Delayed Tasks</div>
+            <div class="stat-value">5</div>
+            <div class="stat-meta"><span class="down">↑ 2</span> from 30 min ago</div>
+            <div class="stat-icon red">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT WORKFLOWS TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon" style="background: var(--c-primary-xlight); color: var(--c-primary);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            </div>
+            <div>
+              <div class="section-title">Recent Workflows</div>
+              <div class="section-sub">All active and recently completed clinic workflows</div>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 8px;">
+              <select class="form-select" style="font-size: 12px; padding: 5px 8px;" onchange="filterTable(this.value)">
+                <option value="">All Types</option>
+                <option value="appointment">Appointment</option>
+                <option value="lab">Lab</option>
+                <option value="walk-in">Walk-In</option>
+                <option value="referral">Referral</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="navigate('new-workflow')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New
+              </button>
+            </div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="wf-table" id="workflowTable">
+              <thead>
+                <tr>
+                  <th>Workflow ID</th>
+                  <th>Patient / Request</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Assigned To</th>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <tr>
+                  <td><span class="wf-id">WF-2024-089</span></td>
+                  <td><strong>Ahmad bin Ismail</strong><br><span style="font-size:11px;color:var(--c-text-muted)">Chest pain consultation</span></td>
+                  <td><span class="badge badge-urgent">Walk-In</span></td>
+                  <td><span class="badge badge-active">Active</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#2E86C1">DR</div> Dr. Rahman</div></td>
+                  <td style="color:var(--c-text-muted)">5 min ago</td>
+                </tr>
+                <tr>
+                  <td><span class="wf-id">WF-2024-088</span></td>
+                  <td><strong>Priya a/p Suresh</strong><br><span style="font-size:11px;color:var(--c-text-muted)">FBC + Lipid panel lab order</span></td>
+                  <td><span class="badge badge-new">Lab</span></td>
+                  <td><span class="badge badge-review">Awaiting Results</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#0E9E75">LB</div> Lab Team</div></td>
+                  <td style="color:var(--c-text-muted)">22 min ago</td>
+                </tr>
+                <tr>
+                  <td><span class="wf-id">WF-2024-087</span></td>
+                  <td><strong>Lim Wei Hong</strong><br><span style="font-size:11px;color:var(--c-text-muted)">Routine check-up appointment</span></td>
+                  <td><span class="badge badge-new">Appointment</span></td>
+                  <td><span class="badge badge-pending">Pending Review</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#7C3AED">NR</div> Nurse Ros</div></td>
+                  <td style="color:var(--c-text-muted)">45 min ago</td>
+                </tr>
+                <tr>
+                  <td><span class="wf-id">WF-2024-086</span></td>
+                  <td><strong>Fatimah Zahra</strong><br><span style="font-size:11px;color:var(--c-text-muted)">Paediatric fever — 8yo</span></td>
+                  <td><span class="badge badge-new">Appointment</span></td>
+                  <td><span class="badge badge-active">Active</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#D97706">DR</div> Dr. Aisha</div></td>
+                  <td style="color:var(--c-text-muted)">1 hr ago</td>
+                </tr>
+                <tr>
+                  <td><span class="wf-id">WF-2024-085</span></td>
+                  <td><strong>Rajasegaran s/o Munisamy</strong><br><span style="font-size:11px;color:var(--c-text-muted)">Specialist referral — cardiology</span></td>
+                  <td><span class="badge" style="background:#EDE9FE;color:#7C3AED">Referral</span></td>
+                  <td><span class="badge badge-done">Completed</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#2E86C1">DR</div> Dr. Rahman</div></td>
+                  <td style="color:var(--c-text-muted)">2 hr ago</td>
+                </tr>
+                <tr>
+                  <td><span class="wf-id">WF-2024-084</span></td>
+                  <td><strong>Wong Mei Ling</strong><br><span style="font-size:11px;color:var(--c-text-muted)">Elderly fall — wrist injury</span></td>
+                  <td><span class="badge badge-urgent">Walk-In</span></td>
+                  <td><span class="badge badge-done">Completed</span></td>
+                  <td><div class="assigned-cell"><div class="mini-av" style="background:#0E9E75">NR</div> Nurse Ros</div></td>
+                  <td style="color:var(--c-text-muted)">3 hr ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== NEW WORKFLOW PAGE ===== -->
+      <div id="section-new-workflow" class="page-section">
+        <div style="margin-bottom: 20px;">
+          <div class="section-title" style="font-size:18px;">Generate New Workflow</div>
+          <div class="section-sub" style="margin-top:4px;">Paste or type any unstructured clinic input — GLM will extract intent and generate a structured workflow</div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-icon" style="background:var(--c-primary-xlight);color:var(--c-primary);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div>
+              <div class="section-title">Input Panel</div>
+              <div class="section-sub">Supports: WhatsApp messages, doctor notes, form submissions, patient requests</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <textarea class="workflow-input-area" id="workflowInput" placeholder="Example inputs:
+
+• 'Walk-in patient, male 54, chest pain and dizziness, no records in system'
+• 'Aisyah, 8 years old, fever and cough for 3 days — request appointment tomorrow morning'
+• 'Dr. Lim: please order FBC and lipid panel for Mr. Rajan, results needed before follow-up next week'
+• 'Elderly lady, 70s, came with son, wrist pain after fall, speaks only Malay'"></textarea>
+
+            <div class="input-row">
+              <div class="form-group">
+                <label class="form-label">Workflow Type</label>
+                <select class="form-select" id="workflowType">
+                  <option value="auto">Auto-detect (recommended)</option>
+                  <option value="appointment">Appointment</option>
+                  <option value="walk-in">Walk-In</option>
+                  <option value="lab">Lab Order</option>
+                  <option value="referral">Referral</option>
+                  <option value="follow-up">Follow-Up</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Priority</label>
+                <select class="form-select" id="workflowPriority">
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1">
+                <label class="form-label">Attach File</label>
+                <div class="upload-btn" onclick="showToast('info','File upload simulated — attach lab forms, referral letters, or patient records')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Attach document...
+                </div>
+              </div>
+              <div class="form-group" style="justify-content:flex-end;">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-accent" onclick="generateWorkflow()" style="padding: 8px 20px; font-size:14px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Generate Workflow
+                </button>
+              </div>
+            </div>
+
+            <!-- AI Thinking indicator -->
+            <div class="ai-thinking" id="aiThinking">
+              <div class="dots"><span></span><span></span><span></span></div>
+              <span style="font-size:13px; color:var(--c-primary); font-weight:600;">GLM is reasoning through your input...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Generated Workflow Result -->
+        <div class="card workflow-result" id="workflowResult">
+          <div class="card-header">
+            <div class="card-icon" style="background:var(--c-accent-light);color:var(--c-accent);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div>
+              <div class="section-title">AI-Generated Workflow</div>
+              <div class="section-sub">Review the steps below before activating</div>
+            </div>
+            <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+              <span class="badge badge-active">GLM Generated</span>
+              <span id="urgencyBadge" class="badge badge-urgent" style="display:none;">URGENT</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="workflow-meta">
+              <div class="workflow-title" id="wfTitle">Walk-In Urgent — Ahmad bin Ismail (54M)</div>
+            </div>
+
+            <!-- Gap Warning -->
+            <div id="gapWarning" style="background:var(--c-danger-light); border:1px solid #FCA5A5; border-radius:8px; padding:10px 14px; margin-bottom:16px; display:none;">
+              <div style="font-size:12px; font-weight:700; color:var(--c-danger); margin-bottom:4px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Missing Information Detected
+              </div>
+              <div id="gapDetails" style="font-size:12px; color:var(--c-danger)"></div>
+            </div>
+
+            <div class="steps-timeline" id="stepsTimeline">
+              <!-- Steps injected by JS -->
+            </div>
+
+            <div class="workflow-actions">
+              <button class="btn btn-success" onclick="approveWorkflow()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                Approve & Activate
+              </button>
+              <button class="btn btn-outline" onclick="showToast('info','Edit mode — modify steps before activation')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit Steps
+              </button>
+              <button class="btn btn-warn" onclick="showToast('warn','Escalated to Clinic Manager for review')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                Escalate
+              </button>
+              <button class="btn btn-ghost" onclick="resetWorkflow()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                Regenerate
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TASK BOARD PAGE ===== -->
+      <div id="section-task-board" class="page-section">
+        <div style="margin-bottom: 20px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <div class="section-title" style="font-size:18px;">Task Board</div>
+            <div class="section-sub" style="margin-top:4px;">Live task assignments across all active clinic workflows</div>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('info','Quick task creation — assign tasks directly to staff')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Task
+          </button>
+        </div>
+        <div class="kanban-board">
+          <!-- To Do -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title">To Do</span>
+              <span class="kanban-count">4</span>
+            </div>
+            <div class="task-card" onclick="showToast('info','WF-2024-087: Patient Lim Wei Hong check-in')">
+              <div class="task-type-tag" style="background:var(--c-primary-xlight);color:var(--c-primary);">Appointment</div>
+              <div class="task-title">Patient check-in & vitals — Lim Wei Hong</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#0E9E75">NR</div><span style="font-size:11px;color:var(--c-text-muted)">Nurse Ros</span></div>
+                <span class="task-time">Due 2:30 PM</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="showToast('info','WF-2024-088: Lab request for Mr. Rajan')">
+              <div class="task-type-tag" style="background:var(--c-accent-light);color:var(--c-accent);">Lab</div>
+              <div class="task-title">Collect blood sample — FBC + Lipid panel</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#D97706">LB</div><span style="font-size:11px;color:var(--c-text-muted)">Lab Tech</span></div>
+                <span class="task-time">Due 3:00 PM</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="showToast('info','Schedule follow-up for Ms. Priya')">
+              <div class="task-type-tag" style="background:var(--c-warn-light);color:var(--c-warn);">Follow-Up</div>
+              <div class="task-title">Schedule follow-up appointment — Priya Suresh</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#2E86C1">RC</div><span style="font-size:11px;color:var(--c-text-muted)">Receptionist</span></div>
+                <span class="task-time">Due 4:00 PM</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="showToast('warn','DELAYED: Referral letter overdue by 45 min')">
+              <div class="task-type-tag" style="background:var(--c-danger-light);color:var(--c-danger);">Urgent</div>
+              <div class="task-title">Complete referral letter — Rajasegaran (Cardiology)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#7C3AED">DR</div><span style="font-size:11px;color:var(--c-text-muted)">Dr. Rahman</span></div>
+                <span class="task-time" style="color:var(--c-danger)">Overdue</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- In Progress -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title">In Progress</span>
+              <span class="kanban-count" style="background:var(--c-primary-xlight);color:var(--c-primary);border-color:var(--c-primary-light);">3</span>
+            </div>
+            <div class="task-card" onclick="showToast('info','Ahmad bin Ismail — urgent consultation in progress')">
+              <div class="task-type-tag" style="background:var(--c-danger-light);color:var(--c-danger);">Urgent Walk-In</div>
+              <div class="task-title">Doctor consultation — Ahmad bin Ismail (chest pain)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#2E86C1">DR</div><span style="font-size:11px;color:var(--c-text-muted)">Dr. Rahman</span></div>
+                <span class="task-time" style="color:var(--c-success)">Active now</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="showToast('info','Fatimah Zahra triage in progress')">
+              <div class="task-type-tag" style="background:var(--c-primary-xlight);color:var(--c-primary);">Appointment</div>
+              <div class="task-title">Triage & vitals — Fatimah Zahra (8yo, fever)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#0E9E75">NR</div><span style="font-size:11px;color:var(--c-text-muted)">Nurse Ros</span></div>
+                <span class="task-time" style="color:var(--c-success)">Active now</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="showToast('info','Lab processing FBC — ETA 30 min')">
+              <div class="task-type-tag" style="background:var(--c-accent-light);color:var(--c-accent);">Lab</div>
+              <div class="task-title">Process FBC sample — Mr. Rajan</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#D97706">LB</div><span style="font-size:11px;color:var(--c-text-muted)">Lab Team</span></div>
+                <span class="task-time">ETA 30 min</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waiting for Review -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title">Waiting Review</span>
+              <span class="kanban-count" style="background:var(--c-purple-light);color:var(--c-purple);border-color:#C4B5FD;">3</span>
+            </div>
+            <div class="task-card" onclick="navigate('human-review')" style="border-color:#C4B5FD;">
+              <div class="task-type-tag" style="background:var(--c-purple-light);color:var(--c-purple);">Human Review</div>
+              <div class="task-title">Review AI workflow — Lim Wei Hong (missing IC)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#7C3AED">SR</div><span style="font-size:11px;color:var(--c-text-muted)">Dr. Siti</span></div>
+                <span class="task-time" style="color:var(--c-purple)">Awaiting</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="navigate('human-review')" style="border-color:#C4B5FD;">
+              <div class="task-type-tag" style="background:var(--c-warn-light);color:var(--c-warn);">Approval</div>
+              <div class="task-title">Approve referral — Rajasegaran to Cardiology, IJN</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#7C3AED">SR</div><span style="font-size:11px;color:var(--c-text-muted)">Dr. Siti</span></div>
+                <span class="task-time" style="color:var(--c-warn)">Pending</span>
+              </div>
+            </div>
+            <div class="task-card" onclick="navigate('human-review')">
+              <div class="task-type-tag" style="background:var(--c-danger-light);color:var(--c-danger);">Missing Data</div>
+              <div class="task-title">Incomplete registration — walk-in elderly patient</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#2E86C1">RC</div><span style="font-size:11px;color:var(--c-text-muted)">Receptionist</span></div>
+                <span class="task-time" style="color:var(--c-danger)">Blocked</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Completed -->
+          <div class="kanban-col">
+            <div class="kanban-col-header">
+              <span class="kanban-col-title">Completed</span>
+              <span class="kanban-count" style="background:var(--c-success-light);color:var(--c-success);border-color:#86EFAC;">5</span>
+            </div>
+            <div class="task-card" style="opacity:0.75;">
+              <div class="task-type-tag" style="background:var(--c-success-light);color:var(--c-success);">Done</div>
+              <div class="task-title">Discharge — Wong Mei Ling (wrist fracture treated)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#0E9E75">DR</div><span style="font-size:11px;color:var(--c-text-muted)">Dr. Aisha</span></div>
+                <span class="task-time">1:30 PM</span>
+              </div>
+            </div>
+            <div class="task-card" style="opacity:0.75;">
+              <div class="task-type-tag" style="background:var(--c-success-light);color:var(--c-success);">Done</div>
+              <div class="task-title">Prescription dispensed — Mrs. Azizah Harun</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#D97706">PH</div><span style="font-size:11px;color:var(--c-text-muted)">Pharmacy</span></div>
+                <span class="task-time">12:45 PM</span>
+              </div>
+            </div>
+            <div class="task-card" style="opacity:0.75;">
+              <div class="task-type-tag" style="background:var(--c-success-light);color:var(--c-success);">Done</div>
+              <div class="task-title">Lab results entered — Tan Bee Leng (Thyroid)</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#2E86C1">LB</div><span style="font-size:11px;color:var(--c-text-muted)">Lab Team</span></div>
+                <span class="task-time">11:20 AM</span>
+              </div>
+            </div>
+            <div class="task-card" style="opacity:0.75;">
+              <div class="task-type-tag" style="background:var(--c-success-light);color:var(--c-success);">Done</div>
+              <div class="task-title">New patient registration — Mohammad Fadzil</div>
+              <div class="task-footer">
+                <div class="task-assignee"><div class="mini-av" style="background:#7C3AED">RC</div><span style="font-size:11px;color:var(--c-text-muted)">Receptionist</span></div>
+                <span class="task-time">10:05 AM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== HUMAN REVIEW PAGE ===== -->
+      <div id="section-human-review" class="page-section">
+        <div style="margin-bottom: 20px;">
+          <div class="section-title" style="font-size:18px;">Human Intervention Required</div>
+          <div class="section-sub" style="margin-top:4px;">These workflows need your decision before they can proceed</div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header">
+            <div>
+              <div class="review-patient">Ahmad bin Ismail — WF-2024-089</div>
+              <div class="review-issue">Walk-in patient, 54M — chest pain + dizziness — urgent escalation</div>
+            </div>
+            <span class="badge badge-urgent">Urgent</span>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">Missing Information</div>
+            <div class="warning-box">Patient IC/NRIC not provided. Contact number unavailable. Allergy history unknown.</div>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">AI Recommendation</div>
+            <div class="ai-rec-box">Proceed with URGENT_WALK_IN template. Collect missing details in parallel during triage. Escalate to duty doctor immediately. Non-blocking — workflow should not wait.</div>
+          </div>
+          <div class="review-actions">
+            <button class="btn btn-success btn-sm" onclick="resolveReview(this,'Workflow approved — urgent protocol activated')">Approve & Proceed</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('info','Request sent to receptionist to collect patient IC')">Request Missing Info</button>
+            <button class="btn btn-ghost btn-sm" onclick="showToast('warn','Case reassigned to Dr. Rahman for direct assessment')">Reassign</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header">
+            <div>
+              <div class="review-patient">Lim Wei Hong — WF-2024-087</div>
+              <div class="review-issue">Routine check-up appointment — AI workflow generated, awaiting manager approval</div>
+            </div>
+            <span class="badge badge-pending">Pending</span>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">Missing Information</div>
+            <div class="warning-box">Patient IC number not on file. Last consultation date unknown — possible returning patient not matched in records.</div>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">AI Recommendation</div>
+            <div class="ai-rec-box">Cross-check patient name against existing records using phone number. If no match found, register as new patient. Workflow can proceed with routine appointment template.</div>
+          </div>
+          <div class="review-actions">
+            <button class="btn btn-success btn-sm" onclick="resolveReview(this,'Workflow approved and activated for Lim Wei Hong')">Approve Workflow</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('info','Patient lookup triggered — checking existing records')">Check Records</button>
+            <button class="btn btn-warn btn-sm" onclick="showToast('warn','Escalated to senior receptionist for manual verification')">Escalate</button>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div class="review-header">
+            <div>
+              <div class="review-patient">Elderly patient (unidentified) — WF-2024-083</div>
+              <div class="review-issue">Walk-in, elderly female ~70s, wrist pain after fall — incomplete registration</div>
+            </div>
+            <span class="badge badge-urgent">Blocked</span>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">Missing Information</div>
+            <div class="warning-box">Full name unknown. IC number unavailable. Medical history absent. Emergency contact not collected. Language barrier — Malay only.</div>
+          </div>
+          <div class="review-section">
+            <div class="review-section-label">AI Recommendation</div>
+            <div class="ai-rec-box">Create placeholder record with son as emergency contact. Proceed with WALK_IN_PARTIAL template. Clinical triage should not wait for registration. Flag case for administrative follow-up post-treatment.</div>
+          </div>
+          <div class="review-actions">
+            <button class="btn btn-success btn-sm" onclick="resolveReview(this,'Partial workflow approved — clinical triage proceeding')">Approve Partial Workflow</button>
+            <button class="btn btn-outline btn-sm" onclick="showToast('info','Malay-speaking staff notified to assist with registration')">Assign Malay Staff</button>
+            <button class="btn btn-danger btn-sm" onclick="showToast('warn','Emergency referral escalation initiated')">Emergency Referral</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== OTHER PAGES (PLACEHOLDER) ===== -->
+      <div id="section-workflow-queue" class="page-section">
+        <div style="margin-bottom:20px;">
+          <div class="section-title" style="font-size:18px;">Workflow Queue</div>
+          <div class="section-sub" style="margin-top:4px;">8 workflows currently active or pending</div>
+        </div>
+        <div class="card"><div class="card-body" style="text-align:center; padding: 60px 20px; color:var(--c-text-muted);">
+          <div style="font-size:40px; margin-bottom:12px;">📋</div>
+          <div style="font-size:15px; font-weight:600; margin-bottom:6px;">Workflow Queue</div>
+          <div>Full queue management view — navigate to Dashboard to see recent workflows or Task Board for live assignments.</div>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="navigate('dashboard')">View Dashboard</button>
+        </div></div>
+      </div>
+
+      <div id="section-patients" class="page-section">
+        <div style="margin-bottom:20px;"><div class="section-title" style="font-size:18px;">Patients</div></div>
+        <div class="card"><div class="card-body" style="text-align:center; padding:60px 20px; color:var(--c-text-muted);">
+          <div style="font-size:40px;margin-bottom:12px;">👤</div>
+          <div style="font-size:15px; font-weight:600;margin-bottom:6px;">Patient Records</div>
+          <div>Patient management module — view histories, manage consent, and link patient records to active workflows.</div>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="showToast('info','Patient module — integrated with workflow context')">Coming Soon</button>
+        </div></div>
+      </div>
+
+      <div id="section-reports" class="page-section">
+        <div style="margin-bottom:20px;"><div class="section-title" style="font-size:18px;">Reports</div></div>
+        <div class="card"><div class="card-body" style="text-align:center; padding:60px 20px; color:var(--c-text-muted);">
+          <div style="font-size:40px;margin-bottom:12px;">📊</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Workflow Analytics</div>
+          <div>Performance reports, bottleneck analysis, staff workload summaries, and AI reasoning audit logs.</div>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="showToast('info','Report generation — AI-powered workflow insights')">Generate Report</button>
+        </div></div>
+      </div>
+
+      <div id="section-settings" class="page-section">
+        <div style="margin-bottom:20px;"><div class="section-title" style="font-size:18px;">Settings</div></div>
+        <div class="card"><div class="card-body" style="text-align:center; padding:60px 20px; color:var(--c-text-muted);">
+          <div style="font-size:40px;margin-bottom:12px;">⚙️</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">System Configuration</div>
+          <div>GLM engine settings, workflow templates, staff role management, notification rules, and API configuration.</div>
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="showToast('info','Settings — configure GLM integration and workflow rules')">Open Settings</button>
+        </div></div>
+      </div>
+
+    </div><!-- /left-col -->
+
+    <!-- ============ RIGHT COLUMN ============ -->
+    <div class="right-col">
+
+      <!-- GLM Status Card -->
+      <div class="card">
+        <div class="card-header" style="padding:10px 14px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--c-success);flex-shrink:0;margin-top:2px;"></div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:var(--c-text);">GLM Engine</div>
+            <div style="font-size:10.5px;color:var(--c-text-muted);">Z.AI — Online</div>
+          </div>
+          <span class="badge badge-active" style="font-size:10px;">Operational</span>
+        </div>
+        <div style="padding:10px 14px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--c-bg);border-radius:6px;padding:8px 10px;">
+              <div style="font-size:10px;color:var(--c-text-muted);margin-bottom:2px;">Workflows Today</div>
+              <div style="font-size:18px;font-weight:800;color:var(--c-primary);">34</div>
+            </div>
+            <div style="background:var(--c-bg);border-radius:6px;padding:8px 10px;">
+              <div style="font-size:10px;color:var(--c-text-muted);margin-bottom:2px;">Avg. Gen Time</div>
+              <div style="font-size:18px;font-weight:800;color:var(--c-primary);">2.3s</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:var(--c-danger-light);color:var(--c-danger);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div class="section-title">Active Alerts</div>
+          <span class="badge badge-urgent" style="margin-left:auto;font-size:10px;">3</span>
+        </div>
+        <div class="activity-feed">
+          <div class="alert-item">
+            <div class="alert-icon danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="alert-title">Workflow Stalled — WF-2024-089</div>
+              <div class="alert-desc">Step 2 overdue by 8 min — vitals not recorded</div>
+              <div class="alert-time">5 min ago</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon warn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
+            </div>
+            <div>
+              <div class="alert-title">Missing Data — Walk-in Elderly</div>
+              <div class="alert-desc">IC number and contact unresolved</div>
+              <div class="alert-time">12 min ago</div>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-icon info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div>
+              <div class="alert-title">Lab Results Ready — Rajan</div>
+              <div class="alert-desc">FBC results uploaded — Dr. Rahman to review</div>
+              <div class="alert-time">18 min ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Feed -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:var(--c-primary-xlight);color:var(--c-primary);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="section-title">Activity Feed</div>
+          <span class="section-action" style="margin-left:auto;" onclick="showToast('info','Full activity log — all workflow events with timestamps')">View All</span>
+        </div>
+        <div class="activity-feed">
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-success)"></div>
+            <div>
+              <div class="activity-text">GLM generated workflow for <strong>Ahmad bin Ismail</strong></div>
+              <div class="activity-time">2:14 PM — URGENT template selected</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-primary-light)"></div>
+            <div>
+              <div class="activity-text">Nurse Ros marked vitals complete — <strong>Fatimah Zahra</strong></div>
+              <div class="activity-time">2:10 PM — Step 2 of 5 done</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-warn)"></div>
+            <div>
+              <div class="activity-text">Escalation triggered — elderly walk-in missing data</div>
+              <div class="activity-time">2:02 PM — Pending manager review</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-success)"></div>
+            <div>
+              <div class="activity-text">Dr. Rahman approved referral — <strong>Rajasegaran</strong></div>
+              <div class="activity-time">1:58 PM — Cardiology, IJN</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-accent)"></div>
+            <div>
+              <div class="activity-text">Lab results entered — <strong>Tan Bee Leng</strong> thyroid panel</div>
+              <div class="activity-time">1:44 PM — Critical value flagged</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-success)"></div>
+            <div>
+              <div class="activity-text">Workflow completed — <strong>Wong Mei Ling</strong></div>
+              <div class="activity-time">1:32 PM — Discharge processed</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-dot" style="background:var(--c-primary-light)"></div>
+            <div>
+              <div class="activity-text">New patient registered — <strong>Mohammad Fadzil</strong></div>
+              <div class="activity-time">10:05 AM — Registration complete</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /right-col -->
+  </div><!-- /main-content -->
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="main-footer">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-weight:700;color:var(--c-primary);">ClinicFlow AI</span>
+      <span>— Workflow Generator & Manager</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="footer-demo-badge">DEMO ENVIRONMENT</span>
+      <span>Powered by Z.AI / GLM</span>
+      <span style="color:var(--c-border);">|</span>
+      <span>© 2024 ClinicFlow AI</span>
+    </div>
+  </footer>
+
+</div><!-- /main-wrapper -->
+
+<script>
+// ============ NAVIGATION ============
+function navigate(section) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const target = document.getElementById('section-' + section);
+  if (target) target.classList.add('active');
+  const navItem = document.querySelector('[data-section="' + section + '"]');
+  if (navItem) navItem.classList.add('active');
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault();
+    const section = this.getAttribute('data-section');
+    if (section) navigate(section);
+  });
+});
+
+// ============ TOAST NOTIFICATIONS ============
+function showToast(type, message) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = {
+    success: '<polyline points="20 6 9 17 4 12"/>',
+    warn: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>',
+    info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+  };
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icons[type]||icons.info}</svg>
+    </div>
+    <span class="toast-msg">${message}</span>
+    <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => { if (toast.parentElement) toast.remove(); }, 4000);
+}
+
+// ============ WORKFLOW GENERATION ============
+const workflowScenarios = {
+  urgent: {
+    title: 'Walk-In Urgent — Ahmad bin Ismail (54M)',
+    urgent: true,
+    gaps: 'Patient IC/NRIC not provided. Contact number unknown. Allergy history absent.',
+    steps: [
+      { num: 1, title: 'URGENT: Notify duty doctor immediately', role: 'System → Dr. Rahman', time: '0 min (now)', type: 'urgent', human: true, humanLabel: 'ESCALATION REQUIRED' },
+      { num: 2, title: 'Triage & record vitals (BP, O2, pulse, temp)', role: 'Nurse Ros', time: 'Within 5 min', type: 'active' },
+      { num: 3, title: 'Collect patient details (IC, contact, history)', role: 'Receptionist', time: 'In parallel — 10 min', type: 'active', gap: 'Missing: IC, contact, allergies' },
+      { num: 4, title: 'Doctor consultation — assess presenting complaint', role: 'Dr. Rahman', time: 'Within 15 min', type: 'human', human: true, humanLabel: 'HUMAN DECISION POINT' },
+      { num: 5, title: 'Determine next action: ECG / Lab / Emergency referral', role: 'Dr. Rahman', time: 'Post-consultation', type: 'human', human: true, humanLabel: 'CLINICAL DECISION' },
+    ]
+  },
+  appointment: {
+    title: 'Appointment Request — Fatimah Zahra (8F, Fever)',
+    urgent: false,
+    gaps: '',
+    steps: [
+      { num: 1, title: 'Confirm available appointment slot', role: 'Receptionist', time: 'Immediate', type: 'active', human: true, humanLabel: 'CONFIRM SLOT' },
+      { num: 2, title: 'Send confirmation message to parent', role: 'System (auto)', time: '5 min after confirmation', type: 'active' },
+      { num: 3, title: 'Patient check-in and triage on day of visit', role: 'Nurse', time: 'Day of appointment', type: 'active' },
+      { num: 4, title: 'Doctor consultation — paediatric assessment', role: 'Dr. Aisha', time: '15 min after triage', type: 'human', human: true, humanLabel: 'CLINICAL DECISION' },
+      { num: 5, title: 'Prescribe medication if needed, discharge', role: 'Dr. Aisha + Pharmacy', time: 'Post-consultation', type: 'active' },
+    ]
+  },
+  lab: {
+    title: 'Lab Order — Mr. Rajan (45M) FBC + Lipid Panel',
+    urgent: false,
+    gaps: '',
+    steps: [
+      { num: 1, title: 'Confirm patient identity and generate lab request', role: 'System', time: 'Immediate', type: 'done' },
+      { num: 2, title: 'Collect blood sample from patient', role: 'Lab Technician', time: 'Within 30 min', type: 'active' },
+      { num: 3, title: 'Process FBC and Lipid Panel tests', role: 'Lab Team', time: '45–60 min', type: 'active' },
+      { num: 4, title: 'Enter results and flag any critical values', role: 'Lab Technician', time: 'Post-processing', type: 'active', gap: 'AI will auto-flag critical values' },
+      { num: 5, title: 'Notify doctor and update workflow status', role: 'System → Dr. Ordering', time: 'Immediate on entry', type: 'active' },
+      { num: 6, title: 'Schedule follow-up appointment', role: 'Receptionist', time: 'After doctor review', type: 'human', human: true, humanLabel: 'HUMAN ACTION' },
+    ]
+  }
+};
+
+function generateWorkflow() {
+  const input = document.getElementById('workflowInput').value.trim();
+  const type = document.getElementById('workflowType').value;
+  const priority = document.getElementById('workflowPriority').value;
+
+  if (!input) { showToast('warn', 'Please enter some clinic input before generating'); return; }
+
+  const thinking = document.getElementById('aiThinking');
+  const result = document.getElementById('workflowResult');
+  thinking.style.display = 'flex';
+  result.classList.remove('visible');
+
+  let scenario = 'appointment';
+  const lower = input.toLowerCase();
+  if (lower.includes('chest') || lower.includes('urgent') || lower.includes('walk-in') || lower.includes('walk in') || lower.includes('dizziness') || priority === 'urgent') scenario = 'urgent';
+  else if (lower.includes('lab') || lower.includes('fbc') || lower.includes('blood') || lower.includes('test') || type === 'lab') scenario = 'lab';
+  else if (lower.includes('fever') || lower.includes('appointment') || lower.includes('book') || lower.includes('schedule')) scenario = 'appointment';
+
+  setTimeout(() => {
+    thinking.style.display = 'none';
+    const data = workflowScenarios[scenario];
+    renderWorkflow(data);
+    result.classList.add('visible');
+    showToast('success', 'GLM workflow generated — ' + data.steps.length + ' steps created');
+  }, 2200);
+}
+
+function renderWorkflow(data) {
+  document.getElementById('wfTitle').textContent = data.title;
+  const urgBadge = document.getElementById('urgencyBadge');
+  urgBadge.style.display = data.urgent ? 'inline-flex' : 'none';
+
+  const gapWarning = document.getElementById('gapWarning');
+  if (data.gaps) {
+    gapWarning.style.display = 'block';
+    document.getElementById('gapDetails').textContent = data.gaps;
+  } else {
+    gapWarning.style.display = 'none';
+  }
+
+  const timeline = document.getElementById('stepsTimeline');
+  timeline.innerHTML = '';
+  data.steps.forEach(step => {
+    const el = document.createElement('div');
+    el.className = 'step-item';
+    const numClass = step.type === 'done' ? 'done' : step.type === 'urgent' ? 'urgent' : step.human ? 'human' : '';
+    const numContent = step.type === 'done' ? '✓' : step.num;
+    let extras = '';
+    if (step.human) extras += `<div class="human-flag">👤 ${step.humanLabel}</div>`;
+    if (step.gap) extras += `<div class="gap-flag">⚠ ${step.gap}</div>`;
+    el.innerHTML = `
+      <div class="step-number ${numClass}">${numContent}</div>
+      <div class="step-body">
+        <div class="step-title">${step.title}</div>
+        <div class="step-meta">
+          <span class="step-meta-item">👤 ${step.role}</span>
+          <span class="step-meta-item">⏱ ${step.time}</span>
+        </div>
+        ${extras}
+      </div>
+    `;
+    timeline.appendChild(el);
+  });
+}
+
+function approveWorkflow() {
+  showToast('success', 'Workflow approved and activated — staff notifications sent');
+  navigate('task-board');
+}
+
+function resetWorkflow() {
+  document.getElementById('workflowResult').classList.remove('visible');
+  document.getElementById('workflowInput').value = '';
+  showToast('info', 'Input cleared — ready for new workflow generation');
+}
+
+// ============ HUMAN REVIEW ============
+function resolveReview(btn, message) {
+  const card = btn.closest('.review-card');
+  card.style.opacity = '0.5';
+  card.style.pointerEvents = 'none';
+  card.style.transition = 'opacity 0.3s';
+  showToast('success', message);
+}
+
+// ============ SEARCH ============
+function handleSearch(value) {
+  const rows = document.querySelectorAll('#tableBody tr');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = value && !text.includes(value.toLowerCase()) ? 'none' : '';
+  });
+}
+
+function filterTable(type) {
+  const rows = document.querySelectorAll('#tableBody tr');
+  rows.forEach(row => {
+    if (!type) { row.style.display = ''; return; }
+    const badges = row.querySelectorAll('.badge');
+    let match = false;
+    badges.forEach(b => { if (b.textContent.trim().toLowerCase().includes(type)) match = true; });
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+// ============ KEYBOARD SHORTCUT ============
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'n' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); navigate('new-workflow'); }
+});
+
+// ============ INIT ============
+showToast('info', 'ClinicFlow AI loaded — Z.AI GLM engine online');
+</script>
+
+</body>
+</html>
