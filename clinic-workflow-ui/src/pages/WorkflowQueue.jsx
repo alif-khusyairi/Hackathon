@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Search, Filter, Clock, CheckCircle2, AlertCircle, PlayCircle, MoreHorizontal, ArrowRight } from "lucide-react"
+import { useToastStore } from "../store/useToastStore" // 1. Import Store
 
-// Mock Data for the Queue
 const INITIAL_WORKFLOWS = [
   { id: "WF-1045", patient: "Ahmad bin Ismail", type: "Urgent Walk-In", status: "Active", time: "10 min ago", progress: "2/5 steps", priority: "High" },
   { id: "WF-1046", patient: "Tan Bee Leng", type: "Lab Order", status: "Pending Review", time: "15 min ago", progress: "0/6 steps", priority: "Normal" },
@@ -11,11 +11,13 @@ const INITIAL_WORKFLOWS = [
   { id: "WF-1040", patient: "Wong Mei Ling", type: "Routine Checkup", status: "Completed", time: "4 hrs ago", progress: "5/5 steps", priority: "Normal" },
 ]
 
-export default function WorkflowQueue({ navigate, addToast, PAGES }) {
+// 2. Remove Props
+export default function WorkflowQueue() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("All")
+  
+  const addToast = useToastStore((state) => state.addToast) // 3. Hook into store
 
-  // Helper function to color-code statuses
   const getStatusStyle = (status) => {
     switch (status) {
       case "Active": return "bg-blue-50 text-blue-700 border-blue-200"
@@ -26,7 +28,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
     }
   }
 
-  // Helper function for status icons
   const getStatusIcon = (status) => {
     switch (status) {
       case "Active": return <PlayCircle size={14} className="mr-1.5" />
@@ -37,7 +38,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
     }
   }
 
-  // Filter logic
   const filteredWorkflows = INITIAL_WORKFLOWS.filter(wf => {
     const matchesSearch = wf.patient.toLowerCase().includes(searchTerm.toLowerCase()) || wf.id.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTab = activeTab === "All" || wf.status === activeTab
@@ -45,13 +45,11 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
   })
 
   const handleApprove = (id) => {
-    if (addToast) addToast("success", `Workflow ${id} approved and moved to Active.`)
+    addToast("success", `Workflow ${id} approved and moved to Active.`)
   }
 
   return (
     <div className="max-w-7xl mx-auto w-full space-y-6 pb-12">
-      
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Workflow Queue</h1>
@@ -60,7 +58,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
           </p>
         </div>
         
-        {/* Quick Actions */}
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -78,7 +75,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex items-center gap-6 border-b border-slate-200">
         {["All", "Pending Review", "Active", "Delayed", "Completed"].map((tab) => (
           <button
@@ -96,10 +92,7 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
         ))}
       </div>
 
-      {/* Workflow Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        
-        {/* Table Header */}
         <div className="grid grid-cols-[100px_2fr_1.5fr_1.5fr_1fr_100px] gap-4 p-4 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
           <div>ID</div>
           <div>Patient & Type</div>
@@ -109,18 +102,14 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
           <div className="text-right">Actions</div>
         </div>
 
-        {/* Table Body */}
         <div className="divide-y divide-slate-100">
           {filteredWorkflows.length === 0 ? (
             <div className="p-8 text-center text-slate-500 text-sm">No workflows found matching your criteria.</div>
           ) : (
             filteredWorkflows.map((wf) => (
               <div key={wf.id} className="grid grid-cols-[100px_2fr_1.5fr_1.5fr_1fr_100px] gap-4 p-4 items-center hover:bg-slate-50 transition-colors group">
-                
-                {/* ID */}
                 <div className="text-sm font-mono font-medium text-slate-600">{wf.id}</div>
                 
-                {/* Patient & Type */}
                 <div>
                   <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
                     {wf.patient}
@@ -131,7 +120,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
                   <div className="text-xs text-slate-500 mt-0.5">{wf.type}</div>
                 </div>
 
-                {/* Status Badge */}
                 <div>
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusStyle(wf.status)}`}>
                     {getStatusIcon(wf.status)}
@@ -139,7 +127,6 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
                   </span>
                 </div>
 
-                {/* Progress Indicator */}
                 <div className="flex items-center gap-3">
                   <div className="text-sm text-slate-600 font-medium">{wf.progress}</div>
                   <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -150,10 +137,8 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
                   </div>
                 </div>
 
-                {/* Time */}
                 <div className="text-sm text-slate-500">{wf.time}</div>
 
-                {/* Actions */}
                 <div className="flex items-center justify-end gap-2">
                   {wf.status === "Pending Review" ? (
                     <button 
@@ -171,13 +156,11 @@ export default function WorkflowQueue({ navigate, addToast, PAGES }) {
                     <MoreHorizontal size={16} />
                   </button>
                 </div>
-
               </div>
             ))
           )}
         </div>
       </div>
-
     </div>
   )
 }

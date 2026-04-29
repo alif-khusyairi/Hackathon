@@ -1,4 +1,7 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom" // 1. Import Router hook
+import { useToastStore } from "../store/useToastStore" // 2. Import Zustand store
+
 import WorkflowInput from "../components/WorkflowInput"
 import WorkflowResult from "../components/WorkflowResult"
 
@@ -62,19 +65,26 @@ function buildWorkflow(input, type, priority) {
   }
 }
 
-export default function NewWorkflow({ navigate, addToast, PAGES }) {
+// 3. Remove all props here!
+export default function NewWorkflow() {
+  // 4. Initialize our global hooks
+  const navigate = useNavigate()
+  const addToast = useToastStore((state) => state.addToast)
+  
   const [workflow, setWorkflow] = useState(null)
 
   const handleGenerate = (input, type, priority) => {
     const wf = buildWorkflow(input, type, priority)
     setWorkflow(wf)
-    if (addToast) addToast("success", `Workflow generated — ${wf.steps.length} steps, ready for approval`)
+    // 5. Cleaned up the toast call
+    addToast("success", `Workflow generated — ${wf.steps.length} steps, ready for approval`)
   }
 
   const handleApprove = () => {
     setWorkflow(null)
-    if (addToast) addToast("success", "Workflow activated — staff notified")
-    if (navigate && PAGES) navigate(PAGES.TASK_BOARD)
+    addToast("success", "Workflow activated — staff notified")
+    // 6. Navigate using the actual URL string
+    navigate("/task-board") 
   }
 
   return (

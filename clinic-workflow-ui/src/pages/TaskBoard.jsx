@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Plus, Clock } from "lucide-react"
+import { useToastStore } from "../store/useToastStore" // 1. Import Store
 
 const INITIAL_COLUMNS = {
   todo: {
@@ -41,9 +42,15 @@ const INITIAL_COLUMNS = {
   },
 }
 
-function TaskCard({ task, colId, onMove, isDone }) {
+// 2. Removed props here
+function TaskCard({ task, colId, isDone }) {
+  const addToast = useToastStore((state) => state.addToast) // Hook into store
+
   return (
-    <div className={`bg-white rounded-lg border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group ${isDone ? "opacity-70" : ""}`}>
+    <div 
+      onClick={() => addToast("success", `Task moved to next stage`)}
+      className={`bg-white rounded-lg border border-slate-200 p-3 shadow-sm hover:shadow-md transition-all cursor-pointer group ${isDone ? "opacity-70 grayscale" : ""}`}
+    >
       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${task.typeColor} mb-2 inline-block`}>
         {task.type}
       </span>
@@ -64,25 +71,27 @@ function TaskCard({ task, colId, onMove, isDone }) {
   )
 }
 
-export default function TaskBoard({ navigate, addToast, PAGES }) {
+// 3. Removed props here
+export default function TaskBoard() {
   const [columns] = useState(INITIAL_COLUMNS)
+  const addToast = useToastStore((state) => state.addToast) // Hook into store
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="max-w-7xl mx-auto w-full space-y-5 pb-12">
+      <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-200">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Task Board</h2>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Task Board</h1>
           <p className="text-sm text-slate-500 mt-0.5">Live task assignments across all active workflows</p>
         </div>
         <button
           onClick={() => addToast("info", "Quick task creation — assign directly to staff")}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm"
         >
           <Plus size={15} /> Add Task
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
         {Object.entries(columns).map(([colId, col]) => (
           <div key={colId} className="bg-slate-100 rounded-xl p-3 border border-slate-200">
             <div className="flex items-center justify-between mb-3">
@@ -98,7 +107,6 @@ export default function TaskBoard({ navigate, addToast, PAGES }) {
                   task={task}
                   colId={colId}
                   isDone={colId === "done"}
-                  onMove={() => addToast("success", `Task moved to next stage`)}
                 />
               ))}
             </div>
