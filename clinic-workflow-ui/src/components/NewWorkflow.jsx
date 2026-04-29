@@ -2,6 +2,7 @@ import { useState } from "react"
 import WorkflowInput from "../components/WorkflowInput"
 import WorkflowResult from "../components/WorkflowResult"
 
+// AI Logic (Kept exactly as you wrote it)
 function buildWorkflow(input, type, priority) {
   const lower = input.toLowerCase()
   const isUrgent = lower.includes("chest") || lower.includes("dizziness") || priority === "urgent"
@@ -77,21 +78,35 @@ export default function NewWorkflow({ navigate, addToast, PAGES }) {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-slate-800">Generate New Workflow</h2>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Paste any unstructured input — GLM extracts intent and generates a structured, actionable workflow.
-        </p>
+    <div className="max-w-7xl mx-auto w-full space-y-6 pb-12">
+      
+      {/* Page Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Generate New Workflow</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Paste any unstructured input — GLM extracts intent and generates a structured, actionable workflow.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-        <WorkflowInput onGenerate={handleGenerate} />
-        <WorkflowResult
-          data={workflow}
-          onApprove={handleApprove}
-          onReset={() => setWorkflow(null)}
-        />
+      {/* Grid Layout: Fixed left column, expanding right column */}
+      <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-6 items-start">
+        
+        {/* Left Column (Input) - Sticky so it stays on screen when scrolling long workflows */}
+        <div className="sticky top-6">
+          <WorkflowInput onGenerate={handleGenerate} />
+        </div>
+        
+        {/* Right Column (Results) */}
+        <div className="min-w-0">
+          <WorkflowResult
+            data={workflow}
+            onApprove={handleApprove}
+            onReset={() => setWorkflow(null)}
+          />
+        </div>
+
       </div>
     </div>
   )

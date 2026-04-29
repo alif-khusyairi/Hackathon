@@ -2,7 +2,13 @@
 // Fix: removed the giant heading that was causing the "Dashboard" watermark effect,
 // added search bar, clinic badge, proper user section
 
-export default function Navbar({ addToast }) {
+import { useToastStore } from "../store/useToastStore"; // 1. Import the store
+
+// 2. Remove { addToast } from the props here!
+export default function Navbar() {
+  // 3. Hook into the global store
+  const addToast = useToastStore((state) => state.addToast);
+
   return (
     <header className="h-14 bg-white border-b border-slate-200 flex items-center gap-3 px-5 flex-shrink-0 sticky top-0 z-30 shadow-sm">
       {/* Clinic badge */}
@@ -34,7 +40,8 @@ export default function Navbar({ addToast }) {
       <div className="ml-auto flex items-center gap-2">
         {/* Notification bell */}
         <button
-          onClick={() => addToast && addToast("info", "3 pending alerts require your attention")}
+          // 4. We can use addToast directly now without checking if it exists
+          onClick={() => addToast("info", "3 pending alerts require your attention")}
           className="relative w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -59,5 +66,5 @@ export default function Navbar({ addToast }) {
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -1,14 +1,12 @@
-// src/pages/Dashboard.jsx
-// Fix: removed <h1 className="text-2xl font-semibold">Dashboard</h1>
-// That heading was rendering as a huge background text because of how
-// Tailwind's font-semibold + text-2xl interacted with the layout.
-// Replaced with a proper page header section.
-
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { useToastStore } from "../store/useToastStore"
+
 import DashboardCards from "../components/DashboardCards"
 import WorkflowInput from "../components/WorkflowInput"
 import WorkflowResult from "../components/WorkflowResult"
 
+// Mock AI Logic (Kept unchanged)
 function buildWorkflow(input) {
   const lower = input.toLowerCase()
   const urgent = lower.includes("chest") || lower.includes("dizziness") || lower.includes("urgent")
@@ -68,36 +66,42 @@ function buildWorkflow(input) {
   }
 }
 
-export default function Dashboard({ navigate, addToast, PAGES }) {
+export default function Dashboard() {
+  // Grab our global state and routing hooks!
+  const navigate = useNavigate()
+  const addToast = useToastStore((state) => state.addToast)
+  
   const [workflow, setWorkflow] = useState(null)
 
   const handleGenerate = (input) => {
     const wf = buildWorkflow(input)
     setWorkflow(wf)
-    if (addToast) addToast("success", `GLM generated ${wf.steps.length}-step workflow — ready for approval`)
+    addToast("success", `GLM generated ${wf.steps.length}-step workflow — ready for approval`)
   }
 
+  // Only ONE handleApprove function here!
   const handleApprove = () => {
     setWorkflow(null)
-    if (addToast) addToast("success", "Workflow approved and activated — staff notified")
-    if (navigate && PAGES) navigate(PAGES.TASK_BOARD)
+    addToast("success", "Workflow approved and activated — staff notified")
+    navigate("/task-board") // Using the actual route path now
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page header — this replaces the old <h1> that caused the watermark */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 max-w-7xl mx-auto w-full pb-8">
+      
+      {/* Page header */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Good morning, Dr. Siti — 12 active workflows today
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Good morning, Dr. Siti — <span className="font-medium text-slate-700">12 active workflows today</span>
           </p>
         </div>
         <button
-          onClick={() => navigate && PAGES && navigate(PAGES.NEW_WORKFLOW)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+          onClick={() => navigate("/new-workflow")}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow active:scale-95"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           New Workflow
@@ -107,10 +111,22 @@ export default function Dashboard({ navigate, addToast, PAGES }) {
       {/* Stats */}
       <DashboardCards />
 
-      {/* Workflow input + result */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <WorkflowInput onGenerate={handleGenerate} />
-        <WorkflowResult data={workflow} onApprove={handleApprove} onReset={() => setWorkflow(null)} />
+      <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6 items-start">
+        
+        {/* Left Column: Fixed width, sticky so it stays in view */}
+        <div className="sticky top-6">
+          <WorkflowInput onGenerate={handleGenerate} />
+        </div>
+        
+        {/* Right Column: Expands to fill the rest of the screen */}
+        <div className="min-w-0">
+          <WorkflowResult 
+            data={workflow} 
+            onApprove={handleApprove} 
+            onReset={() => setWorkflow(null)} 
+          />
+        </div>
+
       </div>
     </div>
   )
