@@ -2,8 +2,14 @@ import { useState } from "react"
 import Sidebar from "./components/Sidebar"
 import Navbar from "./components/Navbar"
 import Dashboard from "./pages/Dashboard"
+import TaskBoard from "./pages/TaskBoard" // Make sure to import this!
 
-// Simple page router - add more pages here later
+// Placeholder components for unbuilt pages so the app doesn't break
+const NewWorkflow = () => <div className="p-6 bg-white rounded-lg shadow-sm">New Workflow Builder (Coming Soon)</div>
+const WorkflowQueue = () => <div className="p-6 bg-white rounded-lg shadow-sm">Workflow Queue (Coming Soon)</div>
+const HumanReview = () => <div className="p-6 bg-white rounded-lg shadow-sm">Human Review (Coming Soon)</div>
+
+// Simple page router
 const PAGES = {
   DASHBOARD: "dashboard",
   NEW_WORKFLOW: "new-workflow",

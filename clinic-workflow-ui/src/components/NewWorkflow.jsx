@@ -67,13 +67,13 @@ export default function NewWorkflow({ navigate, addToast, PAGES }) {
   const handleGenerate = (input, type, priority) => {
     const wf = buildWorkflow(input, type, priority)
     setWorkflow(wf)
-    addToast("success", `Workflow generated — ${wf.steps.length} steps, ready for approval`)
+    if (addToast) addToast("success", `Workflow generated — ${wf.steps.length} steps, ready for approval`)
   }
 
   const handleApprove = () => {
     setWorkflow(null)
-    addToast("success", "Workflow activated — staff notified")
-    navigate(PAGES.TASK_BOARD)
+    if (addToast) addToast("success", "Workflow activated — staff notified")
+    if (navigate && PAGES) navigate(PAGES.TASK_BOARD)
   }
 
   return (
