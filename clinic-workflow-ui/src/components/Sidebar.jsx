@@ -1,14 +1,32 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { 
-  LayoutDashboard, 
-  PlusSquare, 
-  ListTodo, 
-  KanbanSquare, 
-  Users, 
-  Activity 
+  LayoutDashboard, PlusSquare, ListTodo, KanbanSquare, Users, Activity 
 } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
+
+const ROLE_LABELS = {
+  manager: "Clinic Manager",
+  doctor: "Doctor",
+  nurse: "Nurse",
+  lab_tech: "Lab Technician",
+  receptionist: "Receptionist",
+  pharmacy: "Pharmacy",
+  staff: "Staff",
+};
+
+function getInitials(name) {
+  if (!name) return "?";
+  const words = name.replace(/^Dr\.?\s+/i, "").trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isProfileActive = location.pathname === "/profile";
+  const profile = useAuthStore((s) => s.profile);
+
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/new-workflow", label: "New Workflow", icon: PlusSquare },
@@ -19,7 +37,7 @@ export default function Sidebar() {
 
   return (
     <aside className="w-[260px] bg-[#111827] text-slate-300 flex flex-col flex-shrink-0 h-full">
-      {/* Logo Area */}
+      {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-slate-800 gap-3 flex-shrink-0">
         <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white">
           <Activity size={20} />
@@ -69,15 +87,27 @@ export default function Sidebar() {
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
           <span className="text-xs text-slate-300">GLM Engine - Online</span>
         </div>
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-            SR
+
+        <button
+          onClick={() => navigate("/profile")}
+          className={`w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors cursor-pointer ${
+            isProfileActive 
+              ? "bg-slate-800 ring-1 ring-slate-700" 
+              : "hover:bg-slate-800/60"
+          }`}
+        >
+          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            {getInitials(profile?.full_name)}
           </div>
-          <div className="text-left">
-            <p className="text-sm font-bold text-white leading-tight">Dr. Siti Rahimah</p>
-            <p className="text-xs text-slate-500">Clinic Manager</p>
+          <div className="text-left flex-1 min-w-0">
+            <p className="text-sm font-bold text-white leading-tight truncate">
+              {profile?.full_name || "Loading…"}
+            </p>
+            <p className="text-xs text-slate-500 truncate">
+              {ROLE_LABELS[profile?.role] || "Staff"}
+            </p>
           </div>
-        </div>
+        </button>
       </div>
     </aside>
   );

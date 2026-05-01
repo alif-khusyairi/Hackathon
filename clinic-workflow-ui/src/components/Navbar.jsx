@@ -1,13 +1,36 @@
-// src/components/Navbar.jsx
-// Fix: removed the giant heading that was causing the "Dashboard" watermark effect,
-// added search bar, clinic badge, proper user section
+import { useNavigate } from "react-router-dom";
+import { useToastStore } from "../store/useToastStore";
+import { useAuthStore } from "../store/useAuthStore";
 
-import { useToastStore } from "../store/useToastStore"; // 1. Import the store
+const ROLE_LABELS = {
+  manager: "Manager",
+  doctor: "Doctor",
+  nurse: "Nurse",
+  lab_tech: "Lab Tech",
+  receptionist: "Receptionist",
+  pharmacy: "Pharmacy",
+  staff: "Staff",
+};
 
-// 2. Remove { addToast } from the props here!
+function getInitials(name) {
+  if (!name) return "?";
+  const words = name.replace(/^Dr\.?\s+/i, "").trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+// Get a short display name (e.g. "Dr. Siti Rahimah" → "Dr. Siti")
+function getShortName(name) {
+  if (!name) return "Loading…";
+  const words = name.trim().split(/\s+/);
+  if (words.length <= 2) return name;
+  return words.slice(0, 2).join(" ");
+}
+
 export default function Navbar() {
-  // 3. Hook into the global store
-  const addToast = useToastStore((state) => state.addToast);
+  const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
+  const profile = useAuthStore((s) => s.profile);
 
   return (
     <header className="h-14 bg-white border-b border-slate-200 flex items-center gap-3 px-5 flex-shrink-0 sticky top-0 z-30 shadow-sm">
@@ -38,9 +61,7 @@ export default function Navbar() {
 
       {/* Right side */}
       <div className="ml-auto flex items-center gap-2">
-        {/* Notification bell */}
         <button
-          // 4. We can use addToast directly now without checking if it exists
           onClick={() => addToast("info", "3 pending alerts require your attention")}
           className="relative w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors"
         >
@@ -51,19 +72,25 @@ export default function Navbar() {
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
         </button>
 
-        {/* User */}
-        <div className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200 cursor-pointer">
+        <button
+          onClick={() => navigate("/profile")}
+          className="flex items-center gap-2 pl-2 pr-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
+        >
           <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-            SR
+            {getInitials(profile?.full_name)}
           </div>
           <div className="text-left">
-            <div className="text-xs font-semibold text-slate-800 leading-tight">Dr. Siti</div>
-            <div className="text-[10px] text-slate-400">Manager</div>
+            <div className="text-xs font-semibold text-slate-800 leading-tight">
+              {getShortName(profile?.full_name)}
+            </div>
+            <div className="text-[10px] text-slate-400">
+              {ROLE_LABELS[profile?.role] || "Staff"}
+            </div>
           </div>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400">
             <polyline points="6 9 12 15 18 9" />
           </svg>
-        </div>
+        </button>
       </div>
     </header>
   );

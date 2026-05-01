@@ -1,19 +1,42 @@
 import { useState } from "react";
-import { Activity, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Activity, Mail, Lock, User, ArrowRight, AlertCircle } from "lucide-react";
+import { useAuthStore } from "../store/useAuthStore";
 
-export default function Auth({ onLogin }) {
+export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  // Form state
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const signIn = useAuthStore((s) => s.signIn);
+  const signUp = useAuthStore((s) => s.signUp);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
-    
-    // Simulate an API call for login/signup
-    setTimeout(() => {
+
+    try {
+      if (isLogin) {
+        await signIn(email, password);
+        // onAuthStateChange will fire and update the store; App.jsx will redirect.
+      } else {
+        if (!fullName.trim()) {
+          throw new Error("Please enter your full name");
+        }
+        await signUp(email, password, fullName);
+        // Note: depending on your Supabase email confirmation setting,
+        // the user may need to confirm via email before signing in.
+      }
+    } catch (err) {
+      setError(err.message || "Authentication failed");
+    } finally {
       setIsLoading(false);
-      onLogin(); // Tell App.jsx that the user is authenticated
-    }, 1200);
+    }
   };
 
   return (
@@ -35,6 +58,14 @@ export default function Auth({ onLogin }) {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-red-700 leading-relaxed">{error}</p>
+              </div>
+            )}
+
             {/* Name Field - Only show on Sign Up */}
             {!isLogin && (
               <div>
@@ -44,6 +75,8 @@ export default function Auth({ onLogin }) {
                   <input 
                     type="text" 
                     required 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="Dr. Siti Rahimah"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   />
@@ -59,6 +92,8 @@ export default function Auth({ onLogin }) {
                 <input 
                   type="email" 
                   required 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="doctor@clinic.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
@@ -76,6 +111,9 @@ export default function Auth({ onLogin }) {
                 <input 
                   type="password" 
                   required 
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                 />
@@ -102,7 +140,7 @@ export default function Auth({ onLogin }) {
           <div className="mt-8 text-center text-sm text-slate-500">
             {isLogin ? "Don't have an account yet?" : "Already have an account?"}{" "}
             <button 
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setError(""); }}
               className="text-blue-600 font-bold hover:underline"
             >
               {isLogin ? "Sign up" : "Log in"}

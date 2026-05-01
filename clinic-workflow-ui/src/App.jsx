@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Components
@@ -13,26 +13,45 @@ import NewWorkflow from "./pages/NewWorkflow";
 import WorkflowQueue from "./pages/WorkflowQueue";
 import TaskBoard from "./pages/TaskBoard";
 import HumanReview from "./pages/HumanReview";
+import Profile from "./pages/Profile";
+
+// Auth state
+import { useAuthStore } from "./store/useAuthStore";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const session = useAuthStore((s) => s.session);
+  const loading = useAuthStore((s) => s.loading);
+  const initialize = useAuthStore((s) => s.initialize);
 
-  if (!isAuthenticated) {
-    return <Auth onLogin={() => setIsAuthenticated(true)} />;
+  // Restore session on app start (runs once)
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // While we're checking localStorage for an existing session, show a tiny splash
+  // so we don't flash the auth page to already-logged-in users.
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth />;
   }
 
   return (
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-slate-50 min-w-[1024px]">
         
-        {/* Notice how Sidebar and Navbar no longer need props! */}
         <Sidebar />
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <Navbar />
 
           <main className="flex-1 overflow-y-auto p-6 bg-slate-100">
-            {/* React Router handles the page switching based on the URL */}
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -40,11 +59,11 @@ function App() {
               <Route path="/queue" element={<WorkflowQueue />} />
               <Route path="/task-board" element={<TaskBoard />} />
               <Route path="/human-review" element={<HumanReview />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </main>
         </div>
 
-        {/* Global Toast Listener */}
         <ToastContainer />
       </div>
     </BrowserRouter>
