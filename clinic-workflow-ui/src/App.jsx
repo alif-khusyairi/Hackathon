@@ -15,21 +15,28 @@ import TaskBoard from "./pages/TaskBoard";
 import HumanReview from "./pages/HumanReview";
 import Profile from "./pages/Profile";
 
-// Auth state
+// Stores
 import { useAuthStore } from "./store/useAuthStore";
+import { useStatsStore } from "./store/useStatsStore";
 
 function App() {
   const session = useAuthStore((s) => s.session);
   const loading = useAuthStore((s) => s.loading);
   const initialize = useAuthStore((s) => s.initialize);
+  const initializeStats = useStatsStore((s) => s.initialize);
 
-  // Restore session on app start (runs once)
+  // Restore session on app start
   useEffect(() => {
     initialize();
   }, [initialize]);
 
-  // While we're checking localStorage for an existing session, show a tiny splash
-  // so we don't flash the auth page to already-logged-in users.
+  // Initialize stats once we have a session (so RLS lets us read tables)
+  useEffect(() => {
+    if (session) {
+      initializeStats();
+    }
+  }, [session, initializeStats]);
+
   if (loading) {
     return (
       <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center">
@@ -45,7 +52,6 @@ function App() {
   return (
     <BrowserRouter>
       <div className="flex h-screen overflow-hidden bg-slate-50 min-w-[1024px]">
-        
         <Sidebar />
 
         <div className="flex-1 flex flex-col overflow-hidden">

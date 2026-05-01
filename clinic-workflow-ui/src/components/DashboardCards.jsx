@@ -1,98 +1,101 @@
-// src/components/DashboardCards.jsx
-// Upgraded: color-coded top borders, trend indicators, progress bars, icons
+import { Activity, Clock, CheckCircle2, AlertTriangle } from "lucide-react"
+import { useStatsStore } from "../store/useStatsStore"
 
-const STATS = [
+// Each card matches a colored top border + icon + number + sub-line + progress bar
+const CARDS = [
   {
+    key: "active",
     label: "Active Workflows",
-    value: 12,
-    delta: "+4 from yesterday",
-    positive: true,
-    iconPath: "M22 12h-4l-3 9L9 3l-3 9H2",
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-500",
-    topBorder: "bg-blue-500",
-    barColor: "bg-blue-500",
-    barWidth: "75%",
+    accent: "border-t-blue-500",
+    iconBg: "bg-blue-50 text-blue-600",
+    barBg: "bg-blue-500",
+    Icon: Activity,
+    subline: () => "Currently in progress",
   },
   {
+    key: "pending_review",
     label: "Pending Reviews",
-    value: 3,
-    delta: "2 need urgent action",
-    positive: false,
-    iconPath: "M12 2v10l4 4",
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-500",
-    topBorder: "bg-amber-500",
-    barColor: "bg-amber-500",
-    barWidth: "40%",
+    accent: "border-t-amber-400",
+    iconBg: "bg-amber-50 text-amber-600",
+    barBg: "bg-amber-500",
+    Icon: Clock,
+    subline: (v) => v > 0 ? `${v} need urgent action` : "All caught up",
   },
   {
-    label: "Completed Today",
-    value: 27,
-    delta: "↑ 12% vs last week",
-    positive: true,
-    iconPath: "M20 6L9 17l-5-5",
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
-    topBorder: "bg-emerald-500",
-    barColor: "bg-emerald-500",
-    barWidth: "90%",
+    key: "completed_today",
+    label: "Completed",
+    accent: "border-t-emerald-500",
+    iconBg: "bg-emerald-50 text-emerald-600",
+    barBg: "bg-emerald-500",
+    Icon: CheckCircle2,
+    subline: () => "Successfully completed",
   },
   {
-    label: "Delayed Tasks",
-    value: 5,
-    delta: "+2 in last 30 min",
-    positive: false,
-    iconPath: "M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z",
-    iconBg: "bg-red-50",
-    iconColor: "text-red-500",
-    topBorder: "bg-red-500",
-    barColor: "bg-red-500",
-    barWidth: "30%",
+    key: "unresolved_flags",
+    label: "Need Attention",
+    accent: "border-t-red-500",
+    iconBg: "bg-red-50 text-red-600",
+    barBg: "bg-red-500",
+    Icon: AlertTriangle,
+    subline: (v) => v > 0 ? `${v} flag${v === 1 ? "" : "s"} unresolved` : "No flags pending",
   },
 ]
 
 export default function DashboardCards() {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {STATS.map((s) => (
-        <div
-          key={s.label}
-          className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200"
-        >
-          {/* Colored top border */}
-          <div className={`h-1 ${s.topBorder}`} />
+  // Select each primitive individually — Zustand returns the same number on
+  // every render unless the value actually changes, so React stays stable.
+  // Returning an object literal here would be a new reference every render
+  // and would cause an infinite re-render loop.
+  const active = useStatsStore((s) => s.active)
+  const pending_review = useStatsStore((s) => s.pending_review)
+  const completed_today = useStatsStore((s) => s.completed_today)
+  const unresolved_flags = useStatsStore((s) => s.unresolved_flags)
+  const loaded = useStatsStore((s) => s.loaded)
 
-          <div className="p-4">
+  const values = { active, pending_review, completed_today, unresolved_flags }
+
+  // Largest count for relative progress bars (avoid divide-by-zero)
+  const maxValue = Math.max(active, pending_review, completed_today, unresolved_flags, 1)
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {CARDS.map(({ key, label, accent, iconBg, barBg, Icon, subline }) => {
+        const value = values[key]
+        const widthPct = loaded ? (value / maxValue) * 100 : 0
+
+        return (
+          <div
+            key={key}
+            className={`bg-white rounded-xl border border-slate-200 border-t-4 ${accent} shadow-sm p-5`}
+          >
             <div className="flex items-start justify-between mb-3">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-tight">
-                {s.label}
-              </p>
-              <div className={`w-8 h-8 rounded-lg ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={s.iconColor}>
-                  <path d={s.iconPath} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {label}
+              </span>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconBg}`}>
+                <Icon size={14} />
               </div>
             </div>
 
-            <div className="text-3xl font-black text-slate-800 mb-1 tabular-nums">
-              {s.value}
+            <div className="text-3xl font-bold text-slate-900 mb-1">
+              {loaded ? value : (
+                <span className="inline-block w-8 h-8 bg-slate-100 rounded animate-pulse" />
+              )}
             </div>
 
-            <div className={`text-xs font-medium mb-3 ${s.positive ? "text-emerald-600" : "text-red-500"}`}>
-              {s.delta}
-            </div>
+            <p className="text-xs text-slate-500 mb-3 min-h-[16px]">
+              {loaded ? subline(value) : ""}
+            </p>
 
-            {/* Progress bar */}
             <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className={`h-full ${s.barColor} rounded-full`}
-                style={{ width: s.barWidth }}
+                className={`h-full ${barBg} rounded-full transition-all duration-500`}
+                style={{ width: `${widthPct}%` }}
               />
             </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

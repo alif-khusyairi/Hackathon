@@ -1,42 +1,75 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useToastStore } from "../store/useToastStore"
+import { useAuthStore } from "../store/useAuthStore"
+import { useStatsStore } from "../store/useStatsStore"
 
 import DashboardCards from "../components/DashboardCards"
 import WorkflowInput from "../components/WorkflowInput"
 import WorkflowResult from "../components/WorkflowResult"
 
-// Single source of truth for the mock GLM logic — imported from NewWorkflow
-// so we don't maintain two copies of the same function.
 import { buildWorkflow } from "./NewWorkflow"
+import { createWorkflow } from "../api/workflows"
+
+// "Dr. Siti Rahimah" → "Dr. Siti"
+function getDisplayName(fullName) {
+  if (!fullName) return "there"
+  const words = fullName.trim().split(/\s+/)
+  if (words.length <= 2) return fullName
+  return words.slice(0, 2).join(" ")
+}
+
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Good morning"
+  if (hour < 18) return "Good afternoon"
+  return "Good evening"
+}
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const addToast = useToastStore((state) => state.addToast)
+  const addToast = useToastStore((s) => s.addToast)
+  const profile = useAuthStore((s) => s.profile)
+  const activeCount = useStatsStore((s) => s.active)
+
   const [workflow, setWorkflow] = useState(null)
+  const [rawInput, setRawInput] = useState("")
+  const [saving, setSaving] = useState(false)
 
   const handleGenerate = (input) => {
-    // Dashboard's quick-input doesn't expose type/priority controls — let GLM auto-detect.
     const wf = buildWorkflow(input, "auto", "normal")
     setWorkflow(wf)
+    setRawInput(input)
     addToast("success", `GLM generated ${wf.steps.length}-step workflow — ready for approval`)
   }
 
-  const handleApprove = () => {
-    setWorkflow(null)
-    addToast("success", "Workflow approved and activated — staff notified")
-    navigate("/task-board")
+  const handleApprove = async () => {
+    if (!workflow) return
+    setSaving(true)
+    try {
+      await createWorkflow(workflow, rawInput)
+      addToast("success", "Workflow approved and activated — staff notified")
+      setWorkflow(null)
+      setRawInput("")
+      navigate("/queue")
+    } catch (err) {
+      console.error("createWorkflow failed:", err)
+      addToast("warn", err.message || "Failed to save workflow")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto w-full pb-8">
-      
-      {/* Page header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Good morning, Dr. Siti — <span className="font-medium text-slate-700">12 active workflows today</span>
+            {getGreeting()}, {getDisplayName(profile?.full_name)} —{" "}
+            <span className="font-medium text-slate-700">
+              {activeCount} active workflow{activeCount === 1 ? "" : "s"} today
+            </span>
           </p>
         </div>
         <button
@@ -50,7 +83,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Stats */}
       <DashboardCards />
 
       <div className="grid grid-cols-1 xl:grid-cols-[380px_1fr] gap-6 items-start">
@@ -61,7 +93,8 @@ export default function Dashboard() {
           <WorkflowResult 
             data={workflow} 
             onApprove={handleApprove} 
-            onReset={() => setWorkflow(null)} 
+            onReset={() => { setWorkflow(null); setRawInput("") }}
+            saving={saving}
           />
         </div>
       </div>

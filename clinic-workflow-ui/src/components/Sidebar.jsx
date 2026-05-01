@@ -3,6 +3,7 @@ import {
   LayoutDashboard, PlusSquare, ListTodo, KanbanSquare, Users, Activity 
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
+import { useStatsStore } from "../store/useStatsStore";
 
 const ROLE_LABELS = {
   manager: "Clinic Manager",
@@ -27,12 +28,16 @@ export default function Sidebar() {
   const isProfileActive = location.pathname === "/profile";
   const profile = useAuthStore((s) => s.profile);
 
+  // Live counts — update automatically via realtime
+  const queueCount = useStatsStore((s) => s.pending_review);
+  const reviewCount = useStatsStore((s) => s.unresolved_flags);
+
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/new-workflow", label: "New Workflow", icon: PlusSquare },
-    { path: "/queue", label: "Workflow Queue", icon: ListTodo, badge: 8 },
+    { path: "/queue", label: "Workflow Queue", icon: ListTodo, badge: queueCount, badgeColor: "bg-amber-500" },
     { path: "/task-board", label: "Task Board", icon: KanbanSquare },
-    { path: "/human-review", label: "Human Review", icon: Users, badge: 3, badgeColor: "bg-red-500" },
+    { path: "/human-review", label: "Human Review", icon: Users, badge: reviewCount, badgeColor: "bg-red-500" },
   ];
 
   return (
@@ -70,7 +75,8 @@ export default function Sidebar() {
                   <item.icon size={18} className={isActive ? "text-white" : "text-slate-400"} />
                   {item.label}
                 </div>
-                {item.badge && (
+                {/* Only render badge when count > 0 */}
+                {item.badge > 0 && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full text-white ${item.badgeColor || "bg-amber-500"}`}>
                     {item.badge}
                   </span>
